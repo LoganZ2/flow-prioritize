@@ -1,0 +1,4 @@
+/target
+scripts/*.png
+*.csv
+venv/
