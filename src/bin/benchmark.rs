@@ -2,6 +2,7 @@ use flow_prioritize::{FlowType, FlowPrioritizeScheduler};
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use std::fs;
 use tokio::time::sleep;
 use tokio::sync::mpsc;
 use std::future::Future;
@@ -77,6 +78,7 @@ async fn main() {
     run_scenario("Scenario_2_Microservices", num_workers, total_tasks, 2, &mut all_tasks, &mut all_metrics).await;
     
     println!("\nExporting comprehensive experimental data...");
+    fs::create_dir_all("experiment_data").expect("failed to create experiment_data directory");
 
     let mut wtr_tasks = csv::Writer::from_path("experiment_data/all_tasks_trace.csv").unwrap();
     for record in all_tasks.iter() {
@@ -201,7 +203,7 @@ async fn run_proposed_scheduler(num_workers: usize, total_tasks: usize, mouse_ra
 }
 
 async fn run_baseline_scheduler(num_workers: usize, total_tasks: usize, mouse_ratio_mod: usize, tag: String) -> Vec<TaskRecord> {
-    let (tx, mut rx) = mpsc::unbounded_channel::<BoxedTask>();
+    let (tx, rx) = mpsc::unbounded_channel::<BoxedTask>();
     let task_records = Arc::new(Mutex::new(Vec::new()));
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
     let mut handles = vec![];

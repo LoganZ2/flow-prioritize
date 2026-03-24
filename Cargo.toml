@@ -2,6 +2,15 @@
 name = "flow-prioritize"
 version = "0.1.0"
 edition = "2024"
+authors = ["Kaiyi Zhuang"]
+description = "A model-driven priority scheduler for mixed asynchronous Rust workloads"
+license = "MIT"
+repository = "https://github.com/LoganZ2/flow-prioritize"
+homepage = "https://github.com/LoganZ2/flow-prioritize"
+readme = "README.md"
+keywords = ["tokio", "scheduler", "queueing", "latency", "async"]
+categories = ["asynchronous", "concurrency"]
+rust-version = "1.85"
 
 [dependencies]
 csv = "1.4.0"

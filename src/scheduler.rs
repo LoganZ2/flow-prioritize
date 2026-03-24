@@ -9,6 +9,10 @@ use crate::types::FlowType;
 use crate::worker::worker_loop;
 use crate::metrics::metrics_loop;
 
+/// A priority-aware scheduler for mixed asynchronous workloads.
+///
+/// The scheduler separates tasks into mouse and elephant queues and
+/// dynamically adjusts dispatch behavior based on estimated runtime load.
 pub struct FlowPrioritizeScheduler {
     state: Arc<Mutex<SchedulerState>>,
     semaphore: Arc<Semaphore>,
@@ -18,6 +22,11 @@ pub struct FlowPrioritizeScheduler {
 }
 
 impl FlowPrioritizeScheduler {
+    /// Creates a new scheduler instance.
+    ///
+    /// - `c`: number of worker tasks
+    /// - `rho_low`: threshold between light and heavy load scheduling
+    /// - `metrics_interval`: interval for telemetry updates
     pub fn new(c: usize, rho_low: f64, metrics_interval: Duration) -> Self {
         let state = Arc::new(Mutex::new(SchedulerState::new(200.0)));
         let semaphore = Arc::new(Semaphore::new(0));
@@ -46,6 +55,10 @@ impl FlowPrioritizeScheduler {
         }
     }
 
+    /// Submits a task with flow classification.
+    ///
+    /// Returns an error when the scheduler is shut down or when overload
+    /// admission control rejects an elephant task.
     pub fn submit<F>(&self, flow_type: FlowType, task: F) -> Result<(), &'static str>
     where
         F: Future<Output = ()> + Send + 'static,
@@ -78,16 +91,19 @@ impl FlowPrioritizeScheduler {
         Ok(())
     }
     
+    /// Returns `(rho, lambda_mouse, lambda_elephant, mu_total)`.
     pub fn get_metrics(&self) -> (f64, f64, f64, f64) {
         let state = self.state.lock().unwrap();
         (state.rho, state.lambda_mouse, state.lambda_elephant, state.mu_per_worker * self.c as f64)
     }
 
+    /// Returns `(mouse_queue_len, elephant_queue_len)`.
     pub fn get_queue_lengths(&self) -> (usize, usize) {
         let state = self.state.lock().unwrap();
         (state.mouse_queue.len(), state.elephant_queue.len())
     }
 
+    /// Gracefully shuts down the scheduler and waits for worker completion.
     pub async fn shutdown(self) {
         {
             let mut state = self.state.lock().unwrap();
